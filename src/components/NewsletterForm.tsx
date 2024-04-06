@@ -36,12 +36,35 @@ import {
   newsletterFormSchema,
   FrameworksSchema,
 } from '@/schemas/newsletterSchemas';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import useWindowSize from 'react-use/lib/useWindowSize';
+import { z } from 'zod';
+import { motion } from 'framer-motion';
+
+const steps = [
+  {
+    fields: ['firstName', 'lastName'],
+  },
+  {
+    fields: ['framework'],
+  },
+  {
+    fields: ['email'],
+  },
+];
+
+type Inputs = z.infer<typeof newsletterFormSchema>;
+type FieldName = keyof Inputs;
 
 export const NewsletterForm = () => {
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState({
+    current: 0,
+    previous: 0,
+  });
+  // we need delta to determine way of transition animation
+  const delta = step.current - step.previous;
+
   const [submitted, setSubmitted] = useState(false);
   const { width, height } = useWindowSize();
 
@@ -61,98 +84,34 @@ export const NewsletterForm = () => {
     console.log(values);
   }
 
-  const steps = useMemo(
-    () => [
-      {
-        markup: (
-          <div key={1}>
-            <FormField
-              control={form.control}
-              name='firstName'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>First name</FormLabel>
-                  <FormControl>
-                    <Input placeholder='Your first name' {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name='lastName'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Last name</FormLabel>
-                  <FormControl>
-                    <Input placeholder='Your last name' {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-        ),
-        validate: ['firstName'],
-      },
-      {
-        markup: (
-          <div key={2}>
-            <FormField
-              control={form.control}
-              name='framework'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Your preferred JS framework</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder='Select framework' />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {FrameworksSchema.options.map((framework) => (
-                        <SelectItem key={framework} value={framework}>
-                          {framework}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-        ),
-        validate: ['framework'],
-      },
-      {
-        markup: (
-          <div key={3}>
-            <FormField
-              control={form.control}
-              name='email'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Your email</FormLabel>
-                  <FormControl>
-                    <Input placeholder='Your email' {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-        ),
-        validate: ['email'],
-      },
-    ],
-    []
-  );
+  const next = async () => {
+    const fields = steps[step.current].fields;
+    const output = await form.trigger(fields as FieldName[], {
+      shouldFocus: false,
+    });
+
+    if (!output) return;
+
+    if (step.current < steps.length - 1) {
+      if (step.current === steps.length - 2) {
+        await form.handleSubmit(console.log)();
+      }
+
+      setStep((prevState) => ({
+        previous: prevState.current,
+        current: prevState.current + 1,
+      }));
+    }
+  };
+
+  const prev = () => {
+    if (step.current > 0) {
+      setStep((prevState) => ({
+        previous: prevState.current,
+        current: prevState.current - 1,
+      }));
+    }
+  };
 
   if (submitted)
     return (
@@ -180,8 +139,101 @@ export const NewsletterForm = () => {
         <Form {...form}>
           <form className='space-y-8'>
             <div className='grid w-full items-center gap-4'>
-              <div className='flex flex-col space-y-1.5 relative overflow-x-hidden'>
-                {steps[step].markup}
+              <div className='flex flex-col space-y-1.5 relative overflow-hidden'>
+                {step.current === 0 && (
+                  <motion.div
+                    initial={{ x: delta >= 0 ? '50%' : '-50%', opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ duration: 0.3, ease: 'easeInOut' }}
+                  >
+                    <FormField
+                      control={form.control}
+                      name='firstName'
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>First name</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder='Your first name'
+                              {...field}
+                              autoFocus
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name='lastName'
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Last name</FormLabel>
+                          <FormControl>
+                            <Input placeholder='Your last name' {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </motion.div>
+                )}
+                {step.current === 1 && (
+                  <motion.div
+                    initial={{ x: delta >= 0 ? '50%' : '-50%', opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ duration: 0.3, ease: 'easeInOut' }}
+                  >
+                    <FormField
+                      control={form.control}
+                      name='framework'
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Your preferred JS framework</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder='Select framework' />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {FrameworksSchema.options.map((framework) => (
+                                <SelectItem key={framework} value={framework}>
+                                  {framework}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </motion.div>
+                )}
+                {step.current === 2 && (
+                  <motion.div
+                    initial={{ x: delta >= 0 ? '50%' : '-50%', opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ duration: 0.3, ease: 'easeInOut' }}
+                  >
+                    <FormField
+                      control={form.control}
+                      name='email'
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Your email</FormLabel>
+                          <FormControl>
+                            <Input placeholder='Your email' {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </motion.div>
+                )}
               </div>
             </div>
           </form>
@@ -190,41 +242,26 @@ export const NewsletterForm = () => {
       <CardFooter className='flex flex-col space-y-4 mt-auto'>
         <div className='flex w-full'>
           <Button
-            onClick={() => setStep((prevStep) => prevStep - 1)}
+            onClick={prev}
             variant='outline'
-            className={cn({ hidden: step < 1 })}
+            className={cn({ hidden: step.current < 1 })}
           >
             Previous
           </Button>
 
           <Button
-            onClick={() => {
-              if (steps[step].validate) {
-                const validatedFields = steps[step].validate.map((field) =>
-                  // @ts-ignore
-                  form.trigger(field)
-                );
-
-                Promise.all(validatedFields).then((results) => {
-                  if (results.every((result) => result === true)) {
-                    setStep((prevStep) => prevStep + 1);
-                  } else {
-                    console.log('Some fields are invalid');
-                  }
-                });
-              } else {
-                setStep((prevStep) => prevStep + 1);
-              }
-            }}
+            onClick={next}
             variant='outline'
-            className={cn('ml-auto', { hidden: step >= steps.length - 1 })}
+            className={cn('ml-auto', {
+              hidden: step.current >= steps.length - 1,
+            })}
           >
             Next
           </Button>
         </div>
         <div
           className={cn('flex ml-auto w-full', {
-            hidden: step !== steps.length - 1,
+            hidden: step.current !== steps.length - 1,
           })}
         >
           <Button
