@@ -87,16 +87,12 @@ export const NewsletterForm = () => {
   const next = async () => {
     const fields = steps[step.current].fields;
     const output = await form.trigger(fields as FieldName[], {
-      shouldFocus: false,
+      shouldFocus: true,
     });
 
     if (!output) return;
 
     if (step.current < steps.length - 1) {
-      if (step.current === steps.length - 2) {
-        await form.handleSubmit(console.log)();
-      }
-
       setStep((prevState) => ({
         previous: prevState.current,
         current: prevState.current + 1,
@@ -139,10 +135,10 @@ export const NewsletterForm = () => {
         <Form {...form}>
           <form className='space-y-8'>
             <div className='grid w-full items-center gap-4'>
-              <div className='flex flex-col space-y-1.5 relative overflow-hidden'>
+              <div className='flex flex-col space-y-1.5 relative overflow-x-hidden'>
                 {step.current === 0 && (
                   <motion.div
-                    initial={{ x: delta >= 0 ? '50%' : '-50%', opacity: 0 }}
+                    initial={{ x: delta >= 0 ? '0%' : '-50%', opacity: 0 }}
                     animate={{ x: 0, opacity: 1 }}
                     transition={{ duration: 0.3, ease: 'easeInOut' }}
                   >
@@ -168,7 +164,7 @@ export const NewsletterForm = () => {
                       name='lastName'
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Last name</FormLabel>
+                          <FormLabel>Last name (optional)</FormLabel>
                           <FormControl>
                             <Input placeholder='Your last name' {...field} />
                           </FormControl>
