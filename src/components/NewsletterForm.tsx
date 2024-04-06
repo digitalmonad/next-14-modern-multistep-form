@@ -141,6 +141,7 @@ export const NewsletterForm = () => {
                     initial={{ x: delta >= 0 ? '0%' : '-50%', opacity: 0 }}
                     animate={{ x: 0, opacity: 1 }}
                     transition={{ duration: 0.3, ease: 'easeInOut' }}
+                    className='space-y-4'
                   >
                     <FormField
                       control={form.control}
